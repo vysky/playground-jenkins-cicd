@@ -4,95 +4,98 @@ this is a cicd pipeline using jenkins, maven, sonarqube, nexus repository and to
 
 ## getting started
 
-### prerequisites
-
 ### docker
 
-1. install docker desktop
-2. docker compose (to experiment when this pipeline is finished)
-3. docker pull image (to expand on this)
+1. install docker
+2. docker compose (wip)
+3. docker pull image (wip)
+
+---
 
 ### tomcat
 
-1. build a custom tomcat image using the dockerfile provided
-2. `git clone` this repo and `cd` into the dockerfile folder (not the tomcat folder)
-3. (optional) you may change the username and password in the tomcat-users.xml file before building the custom image
-4. type in `"docker build tomcat -t "tomcat-custom"`
-5. this will build a custom tomcat image with the neccessary configurations
+1. `git clone` this repo
+2. (optional) you can change the **username** and **password** in the *tomcat-users.xml* file
+3. `cd` into the dockerfile folder (not the tomcat folder)
+4. enter `docker build tomcat -t "tomcat-custom"` to build a tomcat image with the neccessary configurations
+5. start a tomcat container using `docker run -d --name "tomcat" -p 8888:8080 tomcat-custom`
+6. access tomcat manager at `http://localhost:8888/manager`
+7. access tomcat host-manager at `http://localhost:8888/host-manager`
 
-start a tomcat container using
-`docker run -d --name "tomcat" -p 8888:8080 tomcat-custom`
-
-### maven war project (optional)
-
-1. you may fidn or prepare your own maven war project
-2. ensure it is uploaded to github
-3. replace the github link in the `pipeline.groovy` script when configuring jenkins
+---
 
 ### jenkins
 
-start a jenkins container using
-`docker run -d --name "jenkins" -p 50000:50000 8080:8080 jenkins/jenkins:lts`
+1. start a jenkins container using `docker run -d --name "jenkins" -p 50000:50000 8080:8080 jenkins/jenkins:lts`
+2. access jenkins at `http://localhost:8080`
+3. unlock jenkins by either checking the docker log or `/var/jenkins_home/secrets/initialAdminPassword`
+4. install the **suggested plugins**, then install `maven integration` and `deploy to container` plugins
 
-access jenkins at `localhost:8080`
-
-#### unlock jenkins
-
-if using docker desktop
-1. the secret can be found in the docker desktop
-2. click on the jenkins container to view the log
-3. find the secret and use it to unlock jenkins
-
-#### plugins
-
-1. install suggested plugins
-2. install `maven integration` and `deploy to container` plugins
-
-#### configuration
-
-jdk
-1. under global tool configuration
-2. click "add jdk" and untick "install automatically"
-3. enter the name, "java" for exmaple
+#### add jdk config
+1. go to *manage jenkins > global tool configuration*
+2. click *add jdk* and untick *install automatically*
+3. enter the name (for example, "java")
 4. enter `/opt/java/openjdk` for java_home
 
-maven
-1. under global tool configuration
-2. click "add maven" and enter the name (use in script)
-3. for exmaple, "maven-3.8.5"
+#### add maven config
+1. go to *manage jenkins > global tool configuration*
+2. click *add maven* and enter the name (for exmaple, "maven-3.8.5", will be used in script)
 
-tomcat credential
-1. under manage credentials
-2. create a new credential in the default store scoped
+#### add tomcat credential
+1. go to *manage jenkins > manage credentials*
+2. create a new credential in the default jenkins store scoped
 3. enter the username, password and id
-4. username and password must be the same as the one in `tomcat-users.xml`
+4. username and password must be the same as the one in *tomcat-users.xml*
 5. id is for easy reference and is use in script
+
+---
+
+### sonarqube
+
+1. start a sonarqube container using `docker run -d --name "sonarqube" -p 9000:9000 sonarqube:lts`
+2. access sonarqube at `http://localhost:9000`
+3. default username and password for sonarqube container
+    username `admin`
+    password `admin`
+
+generate token
+1. go to sonarqube, generate a user token by clicking *administration > security > users > token icon*
+2. enter a name and click *generate* to generate the token (to use in jenkins)
+3. go to jenkins, add the token as a secret text credential
+4. go to *manage jenkins > configure system*, find the sonarqube servers section and enter all the required information
+
+create webhook
+1. go to sonarqube, create a webhooks by clicking *administration > configuration > webhooks > create*
+2. enter a name but leave secret field empty
+3. enter the jenkins url with ports and append `/sonarqube-webhook` behind the link
+4. for example, http://192.168.1.100:8888/sonarqube-webhook
+
+---
+
+### nexus repository
+
+1. start a nexus repo container using `docker run -d --name "nexus" -p 8081:8081 sonartype/nexus3:3.38.1`
+2. access nexus repo at `http://localhost:8081`
+3. default username and password for nexus repository container
+    username `admin`
+    password `/nexus-data/admin.password`
+
+create repo
+1. go to nexus repo, click *gear icon > repositories > create repository > maven 2 (hosted)*
+2. enter the name (exmaple **jenkins-maven-repo**), version policy (select **mixed**), deployment policy (select **allow redeploy**) and click *create repository*
+
+1. go to jenkins, click *manage jenkins > configure system*
+
+---
 
 #### create pipeline
 
 create a pipeline project and use the `pipeline.groovy` as the script
 
-### sonarqube
 
-default username and password for sonarqube container
-username `admin`
-password `admin`
 
-token
-1. generate a user token by clicking `administration > security > users > token icon`
-2. enter a name and click generate to generate the token (to use in jenkins)
 
-webhooks
-1. create a webhooks by clicking `administration > configuration > webhooks > create`
-2. enter a name
-3. enter the tomcat (or jenkins) url and append `sonarqube-webhook` behind the link
-4. for example, http://192.168.1.155:8888/sonarqube-webhook
 
-### nexus repository
-
-default username and password for nexus repository container
-username `admin`
-password `/nexus-data/admin.password`
 
 ### relevant links
 https://www.linkedin.com/pulse/how-deploy-war-file-from-jenkins-tomcat-using-docker-de-avila-julio
