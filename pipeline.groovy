@@ -1,7 +1,5 @@
 pipeline {
     agent any
-    parameters {
-    }
     tools {
         // must follow the name set in jenkins global tool config
         maven 'maven-3.8.5'
@@ -14,7 +12,7 @@ pipeline {
         }
         stage("Build and Scan") {
             steps {
-                // must follow the name set in jenkins global tool config
+                // must follow the sonarqube server name set in jenkins configuration system
                 withSonarQubeEnv('sonarqube') {
                     sh 'mvn clean install sonar:sonar'
                 }
@@ -22,6 +20,7 @@ pipeline {
         }
         stage("Quality Gate") {
             steps {
+                // must create a webhook in sonarqube server for this step to work
                 timeout(time: 1, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
@@ -33,6 +32,11 @@ pipeline {
                 // use host ip as the url, do not use localhost (will not work)
                 // sh 'curl "http://admin:11@192.168.1.155:8888/manager/text/deploy?war=file:/var/jenkins_home/workspace/tomcat-free/target/spring-petclinic-2.6.0-SNAPSHOT.war"'
                 deploy adapters: [tomcat9(credentialsId: 'tomcat9', path: '', url: 'http://192.168.1.151:8888/')], contextPath: 'sample-maven-war', war: '**/*.war'
+            }
+        }
+        stage("Upload") {
+            steps {
+                nexusPublisher nexusInstanceId: 'nexus', nexusRepositoryId: 'jenkins-maven-repo', packages: [[$class: 'MavenPackage', mavenAssetList: [[classifier: '', extension: '', filePath: '/var/jenkins_home/workspace/sample-maven-war/target/simple-maven-war.war']], mavenCoordinate: [artifactId: 'simple-maven-war', groupId: 'com.sample', packaging: 'war', version: '1.0']]]
             }
         }
     }
