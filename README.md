@@ -7,8 +7,8 @@ this is a cicd pipeline using jenkins, maven, sonarqube, nexus repository and to
 ### docker
 
 1. install docker
-2. docker compose (wip)
-3. docker pull image (wip)
+2. docker pull image (wip)
+3. docker compose (wip)
 
 ---
 
@@ -49,9 +49,8 @@ add maven config
 add tomcat credential
 1. go to *manage jenkins > manage credentials*
 2. create a new credential in the default jenkins store scoped
-3. enter the username, password and id
+3. enter the username, password and id (use in script)
 4. username and password must be the same as the one in *tomcat-users.xml*
-5. id is for easy reference and is use in script
 
 ---
 
@@ -64,13 +63,19 @@ add tomcat credential
 generate token
 1. go to sonarqube, generate a user token by clicking *administration > security > users > token icon*
 2. enter a name and click *generate* to generate the token (to use in jenkins)
-3. go to jenkins, add the token as a secret text credential
-4. go to *manage jenkins > configure system*, find the sonarqube servers section and enter all the required information (name, url and server authentication token)
+3. go to jenkins, and go to *manage jenkins > manage credentials*
+4. create a new credential in the default jenkins store scoped
+5. click *kind* and select *secret text*
+6. enter the secret (generated token from sonarqube) and id (use in script)
+
+add sonarqube servers config
+1. go to *manage jenkins > configure system*, find the sonarqube servers section and enable *environment variables*
+2. click *add sonarqube* and enter the name, url and server authentication token (credential created above)
 
 create webhook
 1. go to sonarqube, create a webhooks by clicking *administration > configuration > webhooks > create*
 2. enter a name but leave secret field empty
-3. enter the jenkins url with ports and append `/sonarqube-webhook` behind the link (for example, `http://192.168.1.100:8888/sonarqube-webhook`)
+3. enter the host's ip with jenkins' ports and append `/sonarqube-webhook` behind the link (for example, `http://192.168.1.100:8888/sonarqube-webhook`)
 
 useful links
 1. https://docs.sonarqube.org/latest/analysis/scan/sonarscanner-for-jenkins/
@@ -92,9 +97,17 @@ create repo
 1. go to nexus repo, click *gear icon > repositories > create repository > maven 2 (hosted)*
 2. enter the name (exmaple **jenkins-maven-repo**), version policy (select **mixed**), deployment policy (select **allow redeploy**) and click *create repository*
 
+add nexus credential
+1. go to *manage jenkins > manage credentials*
+2. create a new credential in the default jenkins store scoped
+3. enter the username, password and id (use in script)
+4. can use nexus repo's admin's username and password
+
+add sonatype nexus config
 1. go to jenkins, click *manage jenkins > configure system*
-2. find the nexus repository manager servers section and enter all the required information (display name, server id, server url and credentials)
-3. click *test connection* to check if jenkins is able to succesfully connect to nexus repo server
+2. find the nexus repository manager servers section and click *add nexus repository manager server*, then select *nexus repository manager 3.x server*
+3. enter the display name, server id (use in script), server url (use host's ip, example `http://192.168.1.100:8081`) and credentials (created above)
+4. click *test connection* to check if jenkins is able to succesfully connect to nexus repo server
 
 useful links
 1. https://help.sonatype.com/integrations/nexus-and-continuous-integration/nexus-platform-plugin-for-jenkins
@@ -107,10 +120,11 @@ useful links
 ### create cicd pipeline
 
 1. create a pipeline project and use the `pipeline.groovy` as the script
+2. replace all the url in the script with your host's ip address
 
 ---
 
-### others
-curl --upload-file target\debug.war "http://tomcat:tomcat@localhost:8088/manager/deploy?path=/debug&update=true"
-curl -T "myapp.war" "http://manager:manager@localhost:8080/manager/text/deploy?path=/myapp&update=true"
-curl "http://admin:11@localhost:8888/manager/text/deploy?path=/petclinic&war=file:/var/jenkins_home/workspace/tomcat-free/target/spring-petclinic-2.6.0-SNAPSHOT.war"
+### others (for reference)
+1. curl --upload-file target\debug.war "http://tomcat:tomcat@localhost:8088/manager/deploy?path=/debug&update=true"
+2. curl -T "myapp.war" "http://manager:manager@localhost:8080/manager/text/deploy?path=/myapp&update=true"
+3. curl "http://admin:11@localhost:8888/manager/text/deploy?path=/petclinic&war=file:/var/jenkins_home/workspace/tomcat-free/target/spring-petclinic-2.6.0-SNAPSHOT.war"
