@@ -42,6 +42,11 @@ add jdk config
 3. enter the name (for example, "java")
 4. enter `/opt/java/openjdk` for java_home
 
+add sonarqube scanner
+1. go to *manage jenkins > global tool configuration*
+2. click *add sonarqube scanner*
+3. enter the name and enable *install automatically*
+
 add maven config
 1. go to *manage jenkins > global tool configuration*
 2. click *add maven* and enter the name (for exmaple, "maven-3.8.5", use in script)
