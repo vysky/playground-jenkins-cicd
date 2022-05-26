@@ -17,8 +17,8 @@ pipeline {
         NEXUS_GROUP_ID = 'com.sample'
         NEXUS_VER = '1.0'
         // credentials
-        CRED_GITHUB = credentials('github')
-        CRED_TOMCAT = credentials('tomcat9')
+        CRED_GITHUB = 'github'
+        CRED_TOMCAT = 'tomcat9'
     }
     tools {
         // must follow the name set in jenkins global tool config
@@ -33,13 +33,14 @@ pipeline {
             steps {
                 // git will not work if want poll scm, must use checkout instead
                 // https://stackoverflow.com/questions/52151969/git-poll-setup-for-jenkins-groovy-scripted-pipeline
-                checkout([$class: 'GitSCM', branches: [[name: ${GITHUB_BRANCH}]], extensions: [], userRemoteConfigs: [[credentialsId: ${CRED_GITHUB}, url: ${GITHUB_REPO}]]])
+                checkout([$class: 'GitSCM', branches: [[name: env.GITHUB_BRANCH]], extensions: [], userRemoteConfigs: [[credentialsId: env.CRED_GITHUB, url: env.GITHUB_REPO]]])
+                echo CRED_GITHUB
             }
         }
         stage("Build and Scan") {
             steps {
                 // must follow the sonarqube server name set in jenkins configuration system
-                withSonarQubeEnv(${SONAR_NAME}) {
+                withSonarQubeEnv(env.SONAR_NAME) {
                     sh 'mvn clean install sonar:sonar'
                 }
             }
@@ -55,12 +56,12 @@ pipeline {
         stage("Deploy") {
             steps {
                 // use host ip as the url, do not use localhost (will not work)
-                deploy adapters: [tomcat9(credentialsId: ${CRED_TOMCAT}, path: '', url: ${TOMCAT_URL})], contextPath: ${TOMCAT_CONTEXT_PATH}, war: '**/*.war'
+                deploy adapters: [tomcat9(credentialsId: env.CRED_TOMCAT, path: '', url: env.TOMCAT_URL)], contextPath: env.TOMCAT_CONTEXT_PATH, war: '**/*.war'
             }
         }
         stage("Upload") {
             steps {
-                nexusPublisher nexusInstanceId: 'nexus', nexusRepositoryId: 'jenkins-maven-repo', packages: [[$class: 'MavenPackage', mavenAssetList: [[classifier: '', extension: '', filePath: 'target/simple-maven-war.war']], mavenCoordinate: [artifactId: 'simple-maven-war', groupId: 'com.sample', packaging: 'war', version: '1.0']]]
+                nexusPublisher nexusInstanceId: env.NEXUS_INSTANCE_ID, nexusRepositoryId: env.NEXUS_REPO_ID, packages: [[$class: 'MavenPackage', mavenAssetList: [[classifier: '', extension: '', filePath: env.NEXUS_FILE_PATH]], mavenCoordinate: [artifactId: env.NEXUS_ARTIFACT_ID, groupId: env.NEXUS_GROUP_ID, packaging: 'war', version: env.NEXUS_VER]]]
             }
         }
     }
